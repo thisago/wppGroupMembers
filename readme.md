@@ -1,4 +1,4 @@
-<div class=center>
+<div align=center>
 
 # WhatsApp Group Members Extractor
 
