@@ -2,7 +2,7 @@
 // @name        WhatsApp Group Members Extractor
 // @namespace   Violentmonkey Scripts
 // @match       https://web.whatsapp.com/*
-// @grant       none
+// @grant       GM_registerMenuCommand
 // @version     1.0.0
 // @author      Thiago Navarro
 // @description Extracts all group members by just pressing `F2` with a open group in Whatsapp web!
@@ -25,9 +25,9 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 function waitEl(
   baseEl,
   selector,
+  limit = 30,
   check = (el) => el != null,
-  checkInterval = 1000,
-  limit = 30
+  checkInterval = 1000
 ) {
   return new Promise((resolve, reject) => {
     const interval = setInterval(() => {
@@ -179,19 +179,19 @@ function download(text, mime = "text/plain", filename = "members.csv") {
 
 // trigger
 let processing = false
-document.addEventListener("keydown", async (ev) => {
-  if (ev.key == "F2") {
-    if (processing) {
-      alert("Please wait the finish of previous extraction.")
-      return
-    }
-    processing = true
-    try {
-      const members = await getMembers()
-      download(toCsv(members))
-      processing = false
-    } catch (err) {
-      alert(err)
-    }
+async function extractThisGroup() {
+  if (processing) {
+    alert("Please wait the finish of previous extraction.")
+    return
   }
-})
+  processing = true
+  try {
+    const members = await getMembers()
+    download(toCsv(members))
+    processing = false
+  } catch (err) {
+    alert(err)
+  }
+}
+
+GM_registerMenuCommand("Extract this group", extractThisGroup, "h");
