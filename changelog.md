@@ -1,5 +1,9 @@
 # Changelog
 
+## Version 1.3.0 (2023/08/15)
+
+<!-- - Added `sendPms` -->
+
 ## Version 1.2.0 (2023/08/15)
 
 - Added panic stop

@@ -3,12 +3,17 @@
 // @namespace   Violentmonkey Scripts
 // @match       https://web.whatsapp.com/*
 // @grant       GM_registerMenuCommand
+// @grant       GM_getValue
+// @grant       GM_setValue
+// @grant       GM_addValueChangeListener
 // @version     1.2.0
 // @author      Thiago Navarro
 // @run-at      document-end
 // @description Extracts all group members by just pressing `F2` with a open group in WhatsApp web!
 // @downloadURL https://git.ozzuu.com/thisago/wppGroupMembers/raw/branch/master/src/main.user.js
 // ==/UserScript==
+
+const pmConfigValueKey = "pmConfig"
 
 let panicStop = false
 function ifPanicStop() {
@@ -18,6 +23,7 @@ function ifPanicStop() {
   }
   return false
 }
+
 /**
  * Simulates a human-like click interaction on an element using mouse events.
  *
@@ -111,266 +117,514 @@ function waitEl(
   })
 }
 
-/**
- * Remove duplicated numbers
- *
- * @param {Array<Object>} members
- * @returns {Array<Object>}
- */
-function dedupMembers(members) {
-  const contains = (arr, item) => {
-    for (const x of arr) if (x.phone == item.phone) return true
-
-    return false
+const clickElement =
+  (sel, container = document, limit = 30, event = false) =>
+  async () => {
+    let btn = await waitEl(container, sel, limit)
+    if (event) simulateHumanLikeClick(btn)
+    else btn.click()
   }
-  let result = []
-  members.map((member) => {
-    if (!contains(result, member)) result.push(member)
-  })
-  return result
-}
 
-/**
- * Automatically extract members from open group
- *
- * @returns {Promise<Array.>}
- */
-function getMembers(sleepBetweenScrollPages = 500) {
-  return new Promise(async (resolve, reject) => {
-    const openGroupInfoEl = document.querySelector(
-      "[data-testid=conversation-info-header]"
-    )
 
-    if (!openGroupInfoEl) {
-      reject("Button to open group info not found.")
-      return
+(async () => {
+  // try send message
+
+  function clearPmTasks(cancelled = true) {
+    GM_setValue(pmConfigValueKey, cancelled ? "cancelled" : "")
+  }
+
+  try {
+    const config = JSON.parse(GM_getValue(pmConfigValueKey))
+    
+    const messageBox = await waitEl(document, "html.js.serviceworker.adownload.cssanimations.csstransitions.webp.exiforientation.webp-alpha.webp-animation.webp-lossless.wf-loading body.web.dark div#app div._1Fm4m._1h2dM.app-wrapper-web div.two._1jJ70 div._2Ts6i._2xAQV div#main._2Ex_b footer._3E8Fg div._2lSWV._3cjY2.copyable-area div._4r9rJ span div._2lryq div._1VZX7 div._3Uu1_ div.g0rxnol2.ln8gz9je.lexical-rich-text-input div.to2l77zo.gfz4du6o.ag5g9lrv.bze30y65.kao4egtt")
+
+    messabe
+
+    GM_registerMenuCommand("Clear PM tasks", clearPmTasks, "s")
+    // window.close()
+    return
+  } catch {}
+
+  /**
+   * Remove duplicated numbers
+   *
+   * @param {Array<Object>} members
+   * @returns {Array<Object>}
+   */
+  function dedupMembers(members) {
+    const contains = (arr, item) => {
+      for (const x of arr) if (x.phone == item.phone) return true
+
+      return false
     }
+    let result = []
+    members.map((member) => {
+      if (!contains(result, member)) result.push(member)
+    })
+    return result
+  }
 
-    openGroupInfoEl.click()
-
-    const openGroupParticipantsSel = ".q1n4p668"
-    const groupParticipantsSel = "div.thghmljt:nth-child(3)"
-
-    try {
-      const openGroupParticipantsEl = await waitEl(
-        document,
-        openGroupParticipantsSel
+  /**
+   * Automatically extract members from open group
+   *
+   * @returns {Promise<Array.>}
+   */
+  function getMembers(sleepBetweenScrollPages = 500) {
+    return new Promise(async (resolve, reject) => {
+      const openGroupInfoEl = document.querySelector(
+        "[data-testid=conversation-info-header]"
       )
-      openGroupParticipantsEl.click()
-    } catch {
-      reject("Cannot find the element to open group participants")
-      return
-    }
 
-    let groupParticipantsEl = null
-    let membersListEl = null
-    try {
-      groupParticipantsEl = await waitEl(document, groupParticipantsSel)
-      membersListEl = groupParticipantsEl.querySelector("._3YS_f._2A1R8")
-    } catch {
-      reject("Cannot find the group participants element")
-      return
-    }
+      if (!openGroupInfoEl) {
+        reject("Button to open group info not found.")
+        return
+      }
 
-    let members = []
-    var remainingScrolls = -1 // infinite
-    const pageSizeSubtract = 20
-    const pageSize = groupParticipantsEl.clientHeight - pageSizeSubtract
+      openGroupInfoEl.click()
 
-    groupParticipantsEl.scrollTop = 0 // reset scroll
-    var stop = false
-    while (!stop && remainingScrolls != 0) {
-      if (ifPanicStop()) break
-      stop = !(
-        groupParticipantsEl.scrollTop <
-        groupParticipantsEl.scrollHeight - (pageSize + pageSizeSubtract)
-      )
+      const openGroupParticipantsSel = ".q1n4p668"
+      const groupParticipantsSel = "div.thghmljt:nth-child(3)"
+
       try {
-        await waitEl(groupParticipantsEl, ".cw3vfol9._11JPr", 100)
+        const openGroupParticipantsEl = await waitEl(
+          document,
+          openGroupParticipantsSel
+        )
+        openGroupParticipantsEl.click()
       } catch {
-        reject("Cannot find the first user bio in participant list")
+        reject("Cannot find the element to open group participants")
+        return
+      }
+
+      let groupParticipantsEl = null
+      let membersListEl = null
+      try {
+        groupParticipantsEl = await waitEl(document, groupParticipantsSel)
+        membersListEl = groupParticipantsEl.querySelector("._3YS_f._2A1R8")
+      } catch {
+        reject("Cannot find the group participants element")
+        return
+      }
+
+      let members = []
+      var remainingScrolls = -1 // infinite
+      const pageSizeSubtract = 20
+      const pageSize = groupParticipantsEl.clientHeight - pageSizeSubtract
+
+      groupParticipantsEl.scrollTop = 0 // reset scroll
+      var stop = false
+      while (!stop && remainingScrolls != 0) {
+        if (ifPanicStop()) break
+        stop = !(
+          groupParticipantsEl.scrollTop <
+          groupParticipantsEl.scrollHeight - (pageSize + pageSizeSubtract)
+        )
+        try {
+          await waitEl(groupParticipantsEl, ".cw3vfol9._11JPr", 100)
+        } catch {
+          reject("Cannot find the first user bio in participant list")
+          break
+        }
+        ;[...membersListEl.children].forEach((memberEl) => {
+          try {
+            let member = {
+              name:
+                memberEl.querySelector(
+                  ".ggj6brxn.gfz4du6o.r7fjleex.g0rxnol2.lhj4utae.le5p0ye3.l7jjieqr._11JPr"
+                )?.innerText ?? "",
+              bio:
+                memberEl.querySelector(
+                  ".cw3vfol9._11JPr.selectable-text.copyable-text"
+                )?.innerText ?? "",
+              avatar: memberEl.querySelector("img")?.src ?? "",
+              phone: memberEl.querySelector("span._2h0YP")?.innerText ?? "",
+              role: memberEl.querySelector("div.Dvjym")?.innerText ?? "",
+            }
+            if (!member.phone && member.name && member.name[0] == "+") {
+              member.phone = member.name
+              member.name = ""
+            }
+            if (member.role == member.phone) {
+              member.role = ""
+            }
+            members.push(member)
+          } catch (err) {
+            console.log(err, memberEl)
+          }
+        })
+        await sleep(sleepBetweenScrollPages)
+        groupParticipantsEl.scrollTop += pageSize
+        remainingScrolls--
+
         break
       }
-      ;[...membersListEl.children].forEach((memberEl) => {
-        try {
-          let member = {
-            name:
-              memberEl.querySelector(
-                ".ggj6brxn.gfz4du6o.r7fjleex.g0rxnol2.lhj4utae.le5p0ye3.l7jjieqr._11JPr"
-              )?.innerText ?? "",
-            bio:
-              memberEl.querySelector(
-                ".cw3vfol9._11JPr.selectable-text.copyable-text"
-              )?.innerText ?? "",
-            avatar: memberEl.querySelector("img")?.src ?? "",
-            phone: memberEl.querySelector("span._2h0YP")?.innerText ?? "",
-            role: memberEl.querySelector("div.Dvjym")?.innerText ?? "",
-          }
-          if (!member.phone && member.name && member.name[0] == "+") {
-            member.phone = member.name
-            member.name = ""
-          }
-          if (member.role == member.phone) {
-            member.role = ""
-          }
-          members.push(member)
-        } catch (err) {
-          console.log(err, memberEl)
-        }
-      })
-      await sleep(sleepBetweenScrollPages)
-      groupParticipantsEl.scrollTop += pageSize
-      remainingScrolls--
 
-      break
-    }
-    
-    await sleep(500)
-
-    // close participants list
-    document.querySelector("[data-testid=btn-closer-drawer]").click()
-    
-    // resolve promise
-    resolve(dedupMembers(members))
-  })
-}
-
-/**
- * Converts json members to csv
- *
- * @param {Array<Object>} members
- * @returns string
- */
-function groupMembersToCsv(members) {
-  let csv = "phone,name,bio,avatar,role\n"
-  members.map((member) => {
-    if (!member.phone) return
-    csv += `"${member.phone}","${member.name}","${member.bio}","${member.avatar}","${member.role}"\n`
-  })
-  return csv
-}
-
-/**
- * Converts json members object to csv
- *
- * @param {Array<Object>} members
- * @returns string
- */
-function allGroupsMembersToCsv(members) {
-  let csv = "group,phone,name,bio,avatar,role\n"
-  Object.keys(members).map(group => {
-    members[group].map((member) => {
-      if (!member.phone) return
-      csv += `"${group}","${member.phone}","${member.name}","${member.bio}","${member.avatar}","${member.role}"\n`
-    })
-  })
-  return csv
-}
-
-/**
- * Download text as blob
- *
- * @param {string} text
- * @param {string} mime
- * @param {string} filename
- */
-function download(text, mime = "text/plain", filename = "members.csv") {
-  const blob = new Blob([text], {
-    type: mime,
-  })
-  var link = document.createElement("a")
-  link.href = URL.createObjectURL(blob)
-  if (confirm("Want to download?")) {
-    link.download = filename
-  } else {
-    link.target = "_blank"
-  }
-  link.click()
-}
-
-// trigger
-let processing = false
-async function extractThisGroup() {
-  if (processing) {
-    alert("Please wait the finish of previous extraction.")
-    return
-  }
-  processing = true
-  try {
-    const members = await getMembers()
-    download(groupMembersToCsv(members))
-  } catch (err) {
-    alert(err)
-  }
-  processing = false
-}
-
-async function extractAllGroups() {
-  // Containing this string in subheader, it'll be identified as group ready to be extracted
-  if (processing) {
-    alert("Please wait the finish of previous extraction.")
-    return
-  }
-  const groupIdentifierString = prompt(
-    "Provide a string contained in group in subheader to check if it's a group or just a contact (If group contains Brazilian numbers, just confirm)",
-    "+55"
-  )
-  if (!groupIdentifierString) {
-    alert("No subheader string check, stopping")
-    return
-  }
-  processing = true
-  
-  let members = {}
-
-  for (const chat of document.querySelectorAll("._199zF._3j691._1KV7I")) {
-    if (ifPanicStop()) break
-    await simulateHumanLikeClick(chat)
-    try {
-      await waitEl(
-        document,
-        ".g4oj0cdv > span:nth-child(1)",
-        15,
-        (el) => {
-          if (!el) return false
-          if (
-            el.innerText.indexOf("group") == -1 &&
-            el.innerText.indexOf("is typing") == -1 &&
-            el.innerText.indexOf(groupIdentifierString) == -1
-          )
-            return false
-
-          return true
-        },
-        200
-      )
-      let groupName = chat.innerText.split("\n")[0].trim()
-      console.log("it's a group: ", groupName)
       await sleep(500)
-      try {
-        members[groupName] = await getMembers()
-      } catch (err) {
-        if (!confirm(`Error: ${err}\n\nTry next group?`)) break
-      }
 
-      await sleep(1000)
-    } catch {
-      console.log("not group")
-    }
+      // close participants list
+      document.querySelector("[data-testid=btn-closer-drawer]").click()
+
+      // resolve promise
+      resolve(dedupMembers(members))
+    })
   }
-  console.log(members)
-  download(allGroupsMembersToCsv(members))
-  processing = false
-}
 
-function doPanicStop() {
-  panicStop = true
-  setTimeout(() => {
+  /**
+   * Converts json members to csv
+   *
+   * @param {Array<Object>} members
+   * @returns string
+   */
+  function groupMembersToCsv(members) {
+    let csv = "phone,name,bio,avatar,role\n"
+    members.map((member) => {
+      if (!member.phone) return
+      csv += `"${member.phone}","${member.name}","${member.bio}","${member.avatar}","${member.role}"\n`
+    })
+    return csv
+  }
+
+  /**
+   * Converts json members object to csv
+   *
+   * @param {Array<Object>} members
+   * @returns string
+   */
+  function allGroupsMembersToCsv(members) {
+    let csv = "group,phone,name,bio,avatar,role\n"
+    Object.keys(members).map((group) => {
+      members[group].map((member) => {
+        if (!member.phone) return
+        csv += `"${group}","${member.phone}","${member.name}","${member.bio}","${member.avatar}","${member.role}"\n`
+      })
+    })
+    return csv
+  }
+
+  /**
+   * Download text as blob
+   *
+   * @param {string} text
+   * @param {string} mime
+   * @param {string} filename
+   */
+  function download(text, mime = "text/plain", filename = "members.csv") {
+    const blob = new Blob([text], {
+      type: mime,
+    })
+    var link = document.createElement("a")
+    link.href = URL.createObjectURL(blob)
+    if (confirm("Want to download?")) {
+      link.download = filename
+    } else {
+      link.target = "_blank"
+    }
+    link.click()
+  }
+
+  // trigger
+  let processing = false
+  async function extractThisGroup() {
+    if (processing) {
+      alert("Please wait the finish of previous extraction.")
+      return
+    }
+    processing = true
+    try {
+      const members = await getMembers()
+      download(groupMembersToCsv(members))
+    } catch (err) {
+      alert(err)
+    }
     processing = false
-    panicStop = false
-  }, 5000)
-}
+  }
 
-GM_registerMenuCommand("Extract this group", extractThisGroup, "g")
-GM_registerMenuCommand("Extract all groups", extractAllGroups, "a")
-GM_registerMenuCommand("Stop all actions", doPanicStop, "s")
+  async function extractAllGroups() {
+    // Containing this string in subheader, it'll be identified as group ready to be extracted
+    if (processing) {
+      alert("Please wait the finish of previous extraction.")
+      return
+    }
+    const groupIdentifierString = prompt(
+      "Provide a string contained in group in subheader to check if it's a group or just a contact (If group contains Brazilian numbers, just confirm)",
+      "+55"
+    )
+    if (!groupIdentifierString) {
+      alert("No subheader string check, stopping")
+      return
+    }
+    processing = true
+
+    let members = {}
+
+    for (const chat of document.querySelectorAll("._199zF._3j691._1KV7I")) {
+      if (ifPanicStop()) break
+      await simulateHumanLikeClick(chat)
+      try {
+        await waitEl(
+          document,
+          ".g4oj0cdv > span:nth-child(1)",
+          15,
+          (el) => {
+            if (!el) return false
+            if (
+              el.innerText.indexOf("group") == -1 &&
+              el.innerText.indexOf("is typing") == -1 &&
+              el.innerText.indexOf(groupIdentifierString) == -1
+            )
+              return false
+
+            return true
+          },
+          200
+        )
+        let groupName = chat.innerText.split("\n")[0].trim()
+        console.log("it's a group: ", groupName)
+        await sleep(500)
+        try {
+          members[groupName] = await getMembers()
+        } catch (err) {
+          if (!confirm(`Error: ${err}\n\nTry next group?`)) break
+        }
+
+        await sleep(1000)
+      } catch {
+        console.log("not group")
+      }
+    }
+    console.log(members)
+    download(allGroupsMembersToCsv(members))
+    processing = false
+  }
+
+  function doPanicStop() {
+    panicStop = true
+    setTimeout(() => {
+      processing = false
+      panicStop = false
+    }, 5000)
+  }
+
+  const phoneToWppUrl = (phone) =>
+    `https://web.whatsapp.com/send/?phone=${phone.replace(
+      /[^\d]/g,
+      ""
+    )}&text&type=phone_number&app_absent=0`
+
+  const popupId = "wppGroup_popup"
+  const deleteHtmlPopup = () => document.getElementById(popupId)?.remove()
+
+  const pmPopupClass = "pmPopup"
+  const htmlPopup = (element) => {
+    deleteHtmlPopup()
+
+    let popup = document.createElement("div")
+    popup.id = popupId
+
+    popup.style.padding = "1em"
+    popup.style.position = "absolute"
+    popup.style.top = "20%"
+    popup.style.left = "50%"
+    popup.style.transform = "translate(-50%, -50%)"
+    popup.style.background = "#222e35"
+    popup.style.zIndex = "99999"
+    popup.style.borderRadius = "1em"
+    popup.style.border = ".2em solid #111b21"
+    popup.style.boxShadow = "0 0 2em white"
+
+    popup.innerHTML = /*html*/ `
+<style>
+  .${pmPopupClass} .menu {
+    display: flex;
+    flex-direction: row; 
+    justify-content: space-around;
+    width: 100%;
+  }
+  .${pmPopupClass} .menu button {
+    background: #ffffff90;
+  }
+  .${pmPopupClass} .menu .cancel {
+    color: red important;
+  }
+  .hidden {
+    display: none;
+  }
+  .${pmPopupClass} {
+    display: flex;
+    flex-direction: column; 
+  }
+  .${pmPopupClass} div {
+    margin: 1em;
+  }
+  .${pmPopupClass} h1 {
+    font-size: 2.5em;
+    margin-bottom: 1em;
+  }
+</style>`
+    popup.append(element)
+    document.body.append(popup)
+  }
+
+  const pmPopupConfigId = "pmPopupConfig"
+  const pmPopupConfig = () =>
+    new Promise(async (resolve, reject) => {
+      const popup = document.createElement("div")
+      popup.innerHTML = /*html*/ `
+<div class="${pmPopupClass}" id="${pmPopupConfigId}">
+  <h1>PM Message</h1>
+  <div class="msgType">
+    <label>
+      <input checked value="text" type="radio" name="msgType" />
+      Text message
+    </label>
+    <label>
+      <input value="img" type="radio" name="msgType" />
+      Image
+    </label>
+  </div>
+  <div class="textMsg">
+    <textarea minlength="2" placeholder="Text Message" name="textMsg"></textarea>
+  </div>
+  <div class="imageMsg hidden">
+    <input name="imageMsg" type="file" />
+  </div>
+  <div class="menu">
+    <button class="cancel">Cancel</button>
+    <button class="confirm">Confirm</button>
+  </div>
+</div>
+`
+      htmlPopup(popup)
+
+      const textMsgDiv = document.querySelector(`#${pmPopupConfigId} .textMsg`)
+      const imageMsgDiv = document.querySelector(
+        `#${pmPopupConfigId} .imageMsg`
+      )
+      const typeRadios = document.getElementsByName("msgType")
+      for (const radio of typeRadios)
+        radio.oninput = () => {
+          textMsgDiv.classList.toggle("hidden", radio.value != "text")
+          imageMsgDiv.classList.toggle("hidden", radio.value != "img")
+        }
+      document.querySelector(`#${pmPopupConfigId} .cancel`).onclick = () => {
+        reject()
+        deleteHtmlPopup()
+      }
+      document.querySelector(`#${pmPopupConfigId} .confirm`).onclick = () => {
+        resolve({
+          type: typeRadios[0].value,
+          textMsg: document.querySelector(`#${pmPopupConfigId} [name=textMsg]`)
+            .value,
+          imageMsg: document.querySelector(
+            `#${pmPopupConfigId} [name=imageMsg]`
+          ).files,
+        })
+        deleteHtmlPopup()
+      }
+    })
+
+  const extractPhoneNumbers = (text) => [
+    ...text.replace(/[^\dA-Za-z\+]/g, "").match(/\+[0-9]{6,16}/g),
+  ]
+
+  const pmPopupContactsId = "pmPopupContacts"
+  const pmPopupContacts = () =>
+    new Promise(async (resolve, reject) => {
+      const popup = document.createElement("div")
+      popup.innerHTML = /*html*/ `
+<div class="${pmPopupClass}" id="${pmPopupContactsId}">
+  <h1>Contact to PM Message</h1>
+  <textarea placeholder="Contacts" name="contacts"></textarea>
+  <div class="menu">
+    <button class="cancel">Cancel</button>
+    <button class="confirm">Confirm</button>
+  </div>
+</div>
+`
+      htmlPopup(popup)
+
+      const textarea = document.querySelector(
+        `#${pmPopupContactsId} [name=contacts]`
+      )
+      textarea.onchange = () => {
+        textarea.value = extractPhoneNumbers(textarea.value).join("\n")
+      }
+      document.querySelector(`#${pmPopupContactsId} .cancel`).onclick = () => {
+        reject()
+        deleteHtmlPopup()
+      }
+      document.querySelector(`#${pmPopupContactsId} .confirm`).onclick = () => {
+        resolve(extractPhoneNumbers(textarea.value))
+        deleteHtmlPopup()
+      }
+    })
+
+  const openAttachments = clickElement(
+    "._1OT67 > div:nth-child(1) > div:nth-child(1)"
+  )
+  const useWhatsAppHere = clickElement("button.emrlamx0:nth-child(2)")
+
+  const openNewTab = (url) => {
+    const a = document.createElement("a")
+    a.href = url
+    a.target = "_blank"
+    a.click()
+  }
+
+  /**
+   *
+   * @param {string} phone Contact phone number
+   * @param {object} config pmPopupConfig object
+   */
+  function sendToPhone(phone, config) {
+    return new Promise(async (resolve, reject) => {
+      GM_setValue(pmConfigValueKey, JSON.stringify(config))
+      openNewTab(phoneToWppUrl(phone))
+      const interval = setInterval(() => {
+        GM_addValueChangeListener(
+          pmConfigValueKey,
+          async (valName, oldVal, newVal, remote) => {
+            if (!remote) {
+              console.error(
+                "Something went wrong, the value was edited by same tab."
+              )
+              reject()
+              return
+            }
+            if (newVal == oldVal || newVal.length != 0) {
+              console.error("Something went wrong, the message wasn't sent.")
+              reject()
+              return
+            }
+            clearInterval(interval)
+            resolve()
+            console.log("solved")
+          }
+        )
+      }, 1000)
+    })
+  }
+
+  async function sendPms() {
+    processing = true
+    try {
+      let contacts = await pmPopupContacts()
+      let config = await pmPopupConfig()
+      console.log(contacts, config)
+      for (const contact of contacts) {
+        await sendToPhone(contact, config)
+        await sleep(1000)
+      }
+    } catch {
+      console.log("Cancelled")
+    }
+    processing = false
+  }
+
+  sendPms()
+
+  GM_registerMenuCommand("Extract this group", extractThisGroup, "g")
+  GM_registerMenuCommand("Extract all groups", extractAllGroups, "a")
+  GM_registerMenuCommand("Send PMs", sendPms, "a")
+  GM_registerMenuCommand("Stop all actions", doPanicStop, "s")
+})()
