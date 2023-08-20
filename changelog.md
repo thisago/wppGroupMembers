@@ -1,6 +1,6 @@
 # Changelog
 
-## Version 1.1.0 (2023/08/15)
+## Version 1.2.0 (2023/08/15)
 
 - Added panic stop
 - Added all groups extraction

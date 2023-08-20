@@ -3,7 +3,7 @@
 // @namespace   Violentmonkey Scripts
 // @match       https://web.whatsapp.com/*
 // @grant       GM_registerMenuCommand
-// @version     1.0.0
+// @version     1.2.0
 // @author      Thiago Navarro
 // @run-at      document-end
 // @description Extracts all group members by just pressing `F2` with a open group in WhatsApp web!
