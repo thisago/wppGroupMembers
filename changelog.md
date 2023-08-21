@@ -1,10 +1,10 @@
 # Changelog
 
-## Version 1.3.0 (2023/08/15)
+## Version 1.3.0 (2023/08/21)
 
-<!-- - Added `sendPms` -->
+- Added `sendPms`, dirty and useless...
 
-## Version 1.2.0 (2023/08/15)
+## Version 1.2.0 (2023/08/20)
 
 - Added panic stop
 - Added all groups extraction
