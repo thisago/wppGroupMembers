@@ -6,7 +6,7 @@
 // @grant       GM_getValue
 // @grant       GM_setValue
 // @grant       GM_addValueChangeListener
-// @version     1.3.0
+// @version     1.3.1
 // @author      Thiago Navarro
 // @run-at      document-end
 // @description Extracts all group members by just pressing `F2` with a open group in WhatsApp web!
@@ -373,7 +373,7 @@ const clickElement =
       await sleep(500)
 
       // close participants list
-      document.querySelector("[data-testid=btn-closer-drawer]").click()
+      document.querySelector("[aria-label=Close]").click()
 
       // resolve promise
       resolve(dedupMembers(members))
