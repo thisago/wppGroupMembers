@@ -1,5 +1,9 @@
 # Changelog
 
+## Version 1.3.1 (2023/09/05)
+
+- Fixed changed element selector of button to open group info
+
 ## Version 1.3.0 (2023/08/21)
 
 - Added `sendPms`, dirty and useless...

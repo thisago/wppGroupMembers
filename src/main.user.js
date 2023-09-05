@@ -285,7 +285,7 @@ const clickElement =
   function getMembers(sleepBetweenScrollPages = 500) {
     return new Promise(async (resolve, reject) => {
       const openGroupInfoEl = document.querySelector(
-        "[data-testid=conversation-info-header]"
+        "._2au8k"
       )
 
       if (!openGroupInfoEl) {
