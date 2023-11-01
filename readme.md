@@ -9,7 +9,7 @@
 
 ## About
 
-Extracts all group members by just pressing `F2` with a open group in Whatsapp web!
+Extracts all group members by just pressing a button!
 
 ## TODO
 
